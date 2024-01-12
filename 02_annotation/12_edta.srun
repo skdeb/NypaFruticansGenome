@@ -1,0 +1,27 @@
+#!/bin/bash
+#SBATCH --job-name=edta
+#SBATCH -n 4
+#SBATCH -p ultrahigh
+#SBATCH --qos mrmckain
+#SBATCH -N 1
+#SBATCH --mem=300G
+#SBATCH -o slurm_output.%J
+#SBATCH -e slurm_error.%J
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=skdeb@uahpc.ua.edu
+
+
+# Load Singularity module
+module load singularity/3.7.2
+container_path="/grps2/mrmckain/bin/edta/EDTA.sif"
+export BLASTDB_LMDB_MAP_SIZE=100000000
+export PYTHONNOUSERSITE=1
+export TMPDIR="${PWD}/tmp/"
+
+genome=$1 # genome fasta file in the current working directory
+
+singularity exec --bind ${PWD}:${PWD} \
+ "$container_path" EDTA.pl \
+ --genome $genome -species others \
+ --step all --sensitive 1 \
+ --anno 1 --threads 4

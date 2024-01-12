@@ -1,0 +1,42 @@
+#!/bin/bash
+#SBATCH -n 10
+#SBATCH -p main
+#SBATCH -N 1
+#SBATCH --mem=50G
+
+module load python/python3/3.6.5shared
+
+# TSEBRA run is optional
+# Braker uses strict filtering, there is possibility of loosing single exon genes
+#This script will retain those single exon genes using TSEBRA and the braker outputs
+# After getting those genes it will process the output gtf file in standard format usign different scripts.
+
+####you should make a directory inside the braker output directory to be consistant with the relative paths used here ####.
+
+##rename_gff3.pl scripts needs to be edit based on your species and the format you want. so check the script first
+
+species="Nypa" # change into your species
+
+#run tsebra
+python /grps2/mrmckain/bin/annotation_tools/TSEBRA/bin/tsebra.py --gtf ../Augustus/augustus.hints.gtf,../GeneMark-ETP/genemark.gtf \
+ --keep_gtf ../GeneMark-ETP/training.gtf --hintfiles ../hintsfile.gff \
+ --cfg /grps2/mrmckain/bin/annotation_tools/TSEBRA/config/braker3.cfg \
+ --score_tab ${species}_braker_tsebra.tab --out ${species}_braker_tsebra.gtf
+
+#fix the output gtf file
+/grps2/mrmckain/bin/annotation_tools/TSEBRA/bin/rename_gtf.py \
+ --gtf ${species}_braker_tsebra.gtf \
+ --translation_tab ${species}_rename_gtf_translation_tab.txt \
+ --out ${species}_genome_final_annotation.gtf
+
+# convert gtf to gff3
+/share/apps/augustus/3.4.0/augustus-3.4.0/scripts/gtf2gff.pl < ${species}_genome_final_annotation.gtf \
+ --out=${species}_genome_final_annotation.gff3 --gff3
+
+# rename gff3 file following a standard format
+
+## rename_gff3.py script needs to be edited based on your species and the format you want. so check the script first. copy in your directory and make changes as needed.
+
+python rename_gff3.py ${species}_genome_final_annotation.gff3
+
+
